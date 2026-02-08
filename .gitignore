@@ -1,0 +1,9 @@
+target/
+.env
+.pytest_cache/
+tests/__pycache__/
+*.class
+*.pyc
+*.jar
+*.lst
+*.original

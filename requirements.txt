@@ -1,0 +1,4 @@
+pytest
+pytest-json-report
+requests  # If your tests need to make HTTP calls
+playwright
