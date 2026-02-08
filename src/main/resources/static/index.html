@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="fr" x-data="{ messageVisible: false }">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyFarm</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Pompiere&display=swap" rel="stylesheet">
+</head>
+
+<body x-data="farmApp()">
+
+  <div class="background" x-data="{showHomepage: false, showLogin: true, showChickens: false, showClapiers: false, showVache: false, showCoop: false, showRemise: false, showMarche: false, showClassement: false, coopOuverte: true}">
+
+
+    <!-- Ecran login -->
+    <div class="container" x-show="showLogin">
+      <div class="contenu">
+        <img src="images/logo texte.png" alt="logo texte" class="inside-image">
+        <img src="images/logo.png" alt="logo.png" class="inside-image">
+        <p style="color: #2C2624; font-size: 50px;">Le jeu de Ferme en ligne<br><br><br></p>
+        <button class="action-butt" onmouseover="document.l.src='images/logo github orange.png'" onmouseout="document.l.src='images/logo github blanc.png'"
+          @click="await login(); await getFermier(); await Promise.all([getVache(), getPoules(), getCoqs(), getPoussins(), getClassement(), getCoop(), getMarche()]); showHomepage = !showHomepage; showLogin = !showLogin">
+          <span>Login with GitHub</span>
+          <img name="l" src="images/logo github blanc.png" alt="GitHub" class="logogithub">
+        </button>
+      </div>
+    </div>
+
+    <!-- Ecrans pages loggées -->
+    <div x-show="!showLogin" x-data="nbPoulesDispoMarche: 0, nbCoqsDispoMarche: 0, nbLMDispoMarche: 0, nbLFDispoMarche: 0">
+      <!-- Images en haut à gauche -->
+      <div class="top-left">
+        <img src="images/logo.png" alt="logo" class="inside-vache">
+        <img src="images/logo texte.png" alt="logo texte" class="inside-titre">
+      </div>
+
+      <!-- Colonne gauche, juste en dessous -->
+      <div class="left-column-below">
+
+        <div x-data="{
+          index: Math.floor(new Date().getHours() / 3) + 1,
+          heure: '',
+          date: '',
+          init() {
+            this.updateInfos();
+            setInterval(() => this.updateInfos(), 1000); // met à jour toutes les minutes
+          },
+          updateInfos() {
+            const maintenant = new Date();
+        
+            // Image selon l'heure
+            this.index = Math.floor(maintenant.getHours() / 3) + 1;
+  
+            // Heure formatée
+            const heures = maintenant.getHours().toString().padStart(2, '0');
+            const minutes = maintenant.getMinutes().toString().padStart(2, '0');
+            const second = maintenant.getSeconds().toString().padStart(2, '0');
+            this.heure = `${heures}:${minutes}:${second}`;
+  
+            // Date formatée en français
+            const jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+            const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  
+            const jour = jours[maintenant.getDay()];
+            const date = maintenant.getDate();
+            const moisNom = mois[maintenant.getMonth()];
+  
+            this.date = `${jour}`;
+            }
+          }" class="mid-left">
+          <img :src="`images/horloge ${index}.png`" alt="Horloge dynamique" class="horloge-image">
+          <p style="color: #2C2624; font-size: 2vw; font-weight: 600; margin-left: 1.5vw; margin-top: 1vh;" class="ecriture" x-text="date"><br></p>
+          <br>
+          <p style="color: #2C2624; font-size: 1.5vw; font-weight: 700; margin-left: 1.9vw; margin-top: -1vh;"  class="ecriture" x-text="heure"></p>
+        </div>
+
+        <button class="action-buttLogge" @click="showHomepage = false, showLogin = false, showChickens = false, showClapiers = false, showVache = false, showRemise = false, showMarche = false, showCoop = false, showClassement = true, toggle(), getClassement()">
+          <span>Classement</span>
+        </button>
+        <button class="action-buttLogge" @click="await getFermier(); await Promise.all([getVache(), getPoules(), getCoqs(), getPoussins(), getCoop(), getMarche()]); showHomepage = true; showChickens = false; showClapiers = false; showVache = false; showRemise = false; showMarche = false; showCoop = false; showClassement = false">
+          <span>Accueil</span>
+        </button>
+      </div>
+
+      <div>
+        <div class="top-right">
+          <p style="color: #2C2624; font-size: 2vw; font-weight: 600; margin-right: 1.5vw; margin-top: 3vh;" class="ecriture" x-text="fermier.nomUtilisateur"></p>
+          <img style="width: 8vw; height: auto; border: 0.5vw solid #2C2624; margin-left: 0.5vw;" src="images/icone_joueur_2.png" alt="iconeJoueur">
+          <span style="color: #2C2624; font-size: 2vw; font-weight: 600; margin-right: 1.5vw" class="ecriture">Niveau 1</span>
+          <p style="color: #2C2624; font-size: 2vw; font-weight: 700; margin-bottom: 3vh; margin-right: 1vw;" class="ecriture" x-text="fermier.ecus + ' écus'"></p>
+
+          <!-- Boutons sous "Niveau 1" -->
+          <button class="action-buttLogge" @click="await hiberner(); showHomepage = false; showLogin = true; showChickens = false; showClapiers = false; showVache = false; showRemise = false; showMarche = false; showCoop = false">
+            <span>Hiberner</span>
+          </button>
+          <button class="action-buttLogge" @click="showHomepage = false, showLogin = true, showChickens = false, showClapiers = false, showVache = false, showRemise = false, showMarche = false, showCoop = false">
+            <span>Se déconnecter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cadre central scrollable -->
+      <div class="containerLogge">
+
+        <!-- Debut Ecran accueil -->
+        <div class="contenuHome" x-show="showHomepage && token">
+          <p style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 64px;">BIENVENUE, <span x-text="fermier.nomUtilisateur.toUpperCase()"></span></p>
+          <div class="containerStatsJoueur">
+            <div class="nomStatJoueur">SCORE</div>
+            <div class="uneStatJoueur">Ecus</div>
+            <div class="uneStatJoueur">Négo</div>
+            <div class="uneStatJoueur">Prod</div>
+            <div class="uneStatJoueur"><span x-text="fermier.statistique.pointEcus"></div>
+            <div class="uneStatJoueur"><span x-text="fermier.statistique.pointNego"></span></div>
+            <div class="uneStatJoueur"><span x-text="fermier.statistique.pointProd"></span></div>
+          </div>
+          <div class="containerEmprunt" x-data="{qttEcus: 0}">
+            <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">Emprunt</span>
+            <span style="font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;"><span x-text="fermier.empruntRembourse"></span>/1500 écus remboursés</span>
+            <input style="background: #fdf7e8; width: 6vw; margin-left: 2vw;" type="number" min="1" x-model="qttEcus" class="border p-1 rounded" placeholder="QTT">
+            <button class="btRembourser" @click="rembourserEmprunt">
+                  <span>Rembourser</span>
+            </button>
+          </div>
+          
+          <div class="flex-container">
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">PATURAGE</span>
+              </div>
+              <img src="images/vache.png" alt="Image vache" @Click="await getVache(); await getFermier(); showVache = true; showHomepage = false">
+              <div class="stock">
+                <div class="stockBorderHalf">
+                  <img src="images/icone vache.png" alt="Icone vache" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;" x-text="vache.estVivante ? 'X 1' : 'X 0'"></span>
+                </div>
+                <div class="stockLastHalf">
+                  <img src="images/icone lait.png" alt="Icone lait" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="vache.litresLait"></span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">POULAILLER</span>
+              </div>
+              <img src="images/poulailler.png" alt="Image poulailler" @click="await Promise.all([getPoules(), getCoqs(), getPoussins()]); await getFermier(); showChickens = true; showHomepage = false">
+              <div class="stock">
+                <div class="stockBorderFourth">
+                  <img src="images/icone poule.png" alt="Icone poule" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.poules.length"></span></span>
+                </div>
+                <div class="stockBorderFourth">
+                  <img src="images/icone coq.png" alt="Icone coq"style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.coqs.length"></span></span>
+                </div>
+                <div class="stockBorderFourth">
+                  <img src="images/icone poussin.png" alt="Icone poussin"style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.poussins.length"></span></span>
+                </div>
+                <div class="stockLastFourth">
+                  <img src="images/icone oeuf.png" alt="Icone oeuf" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.remise.oeuf"></span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          
+
+          <div class="flex-container">
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">CLAPIERS</span>
+              </div>
+              <img src="images/clapier.png" alt="Image clapier" @Click="await getClapier(); await getFermier(); showClapiers = true; showHomepage = false">
+              <div class="stock">
+                <div class="stockBorderThird">
+                  <img src="images/icone lapin femelle.png" alt="Icone lapin femelle" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.clapier.nbLapinsFemelles"></span></span>
+                </div>
+                <div class="stockBorderThird">
+                  <img src="images/icone lapin male.png" alt="Icone lapin male" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.clapier.nbLapinsMales"></span></span>
+                </div>
+                <div class="stockLastThird">
+                  <img src="images/icone lapereau.png" alt="Icone lapereau" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="fermier.clapier.nbLapereauxBebes + fermier.clapier.nbLapereauxPetits + fermier.clapier.nbLapereauxGros"></span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">REMISE</span>
+              </div>
+              <img src="images/remise.png" alt="Image remise" @Click="await getRemise(); await getFermier(); showRemise = true; showHomepage = false">
+            </div>
+          </div>
+
+          <div class="flex-container">
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">MARCHE</span>
+              </div>
+              <img src="images/marche.png" alt="Image marche" @Click="await getMarche(); await getFermier(); showMarche = true; showHomepage = false">
+              <div class="stock">
+                <div class="stockBorderFourth">
+                  <img src="images/icone poule.png" alt="Icone poule"style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="nbPoulesDispoMarche"></span>
+                </div>
+                <div class="stockBorderFourth">
+                  <img src="images/icone coq.png" alt="Icone coq" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="nbCoqsDispoMarche"></span>
+                </div>
+                <div class="stockBorderFourth">
+                  <img src="images/icone lapin femelle.png" alt="Icone lapin femelle" style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="nbLFDispoMarche"></span></span>
+                </div>
+                <div class="stockLastFourth">
+                  <img src="images/icone lapin male.png" alt="Icone lapin male"style="height: 70px; width: 70px;">
+                  <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 28px;">X <span x-text="nbLMDispoMarche"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="containerBoutonPage">
+              <div class="nomPage">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 40px;">COOPERATIVE</span>
+              </div>
+              <img src="images/coop.png" alt="Image cooperative" @Click="await getCoop(); await getFermier(); showCoop = true; showHomepage = false">
+              <div class="affichageBoutonRemise">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 35px;" x-text="coopOuverte ? 'OUVERTE' : 'FERMEE'"></span>
+                <span style="font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">horaires :</span>
+                <span style="font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">5h-14h,  17h-20h,  22h-3h</span>
+              </div>
+            </div>
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+
+        </div>
+        <!-- Fin Ecran accueil -->
+
+        <!-- Debut Ecran poulailler -->
+        <div class="contenu" style="gap: 50px" x-show="showChickens && token">
+          <h1 class="titrePage">POULAILLER</h1>
+          <img src="images/poulailler grand.png" style="border : 7px solid #BC6C25;" alt="poulailler">
+    
+          <!--affichage des poules-->
+          <h2 style="color: #2C2624; font-size: 40px;">POULES</h2>
+          <div class="actionAll">
+            <button @click="nourrirPoules" class="action-buttLogge2">
+              <strong style="font-size: 22px">Nourrir toutes</strong>
+            </button>
+            <button @click="abreuverPoules" class="action-buttLogge2">
+              <strong style="font-size: 22px;">Abreuver toutes</strong>
+            </button>
+            <button @click="soignerPoules" class="action-buttLogge2">
+              <strong style="font-size: 22px;">Soigner toutes</strong>
+            </button>
+            <button @click="nettoyerPoules" class="action-buttLogge2">
+              <strong style="font-size: 22px;">Nettoyer toutes</strong>
+            </button>
+          </div>
+          <div class="containerVolaille">
+            <div class="grilleVolaille">
+              <template x-for="poule in poules" :key="poule.id">
+                <div class="volaille" x-data="
+                {
+                  nourrie: '',
+                  abreuve: '',
+                  soigne: '',
+                  nettoye: '',
+                  init(){
+                    this.updateStats();
+                    setInterval(() => this.updateStats(), 1000); // met à jour toutes les minutes
+                  }, 
+                  updateStats(){
+                    const now = new Date();
+                    const nourrirP = new Date(poule.nourris);
+                    const abreuverP = new Date(poule.abreuve);
+  
+                    if(now.getDay() == nourrirP.getDay()){this.nourrie = 'nourrie';}else{this.nourrie = 'affamée';}
+                    if(now.getDay() == abreuverP.getDay()){this.abreuve = 'abreuvée';}else{this.abreuve = 'assoiffée';}
+                    if(poule.malade == null){this.soigne = 'saine';}else{this.soigne = 'malade';}
+                    if(poule.sale == null){this.nettoye = 'propre';}else{this.nettoye = 'sale';}
+                  }
+                }">
+                  <img src="images/icone poule.png" alt="poule">
+                  <div class="statsVolaille">
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Age : ' + poule.age + 'j'"></strong>
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Poids : ' + poule.poids.toFixed(2) + ' kg'"></strong>
+                    <button @click="nourrir1Poule(poule.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px; white-space: pre;"  >   Nourrir   </strong>
+                        <strong style="font-size: 15px;"  >5 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="abreuver1Poule(poule.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Abreuver</strong>
+                        <strong style="font-size: 15px;"  >2 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nourrie"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="abreuve"></strong>
+                    <button @click="soigner1Poule(poule.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Soigner</strong>
+                        <strong style="font-size: 15px;"  >6 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="nettoyer1Poule(poule.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Nettoyer</strong>
+                        <strong style="font-size: 15px;"  >3 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="soigne"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nettoye"></strong>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+    
+          <!--affichage des coqs-->
+          <h2 style="color: #2C2624; font-size: 40px;">COQS</h2>
+          <div class="actionAll">
+            <button @click="nourrirCoqs" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Nourrir tous</strong>
+            </button>
+            <button @click="abreuverCoqs" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Abreuver tous</strong>
+            </button>
+            <button @click="soignerCoqs" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Soigner tous</strong>
+            </button>
+            <button @click="nettoyerCoqs" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Nettoyer tous</strong>
+            </button>
+          </div>
+          <div class="containerVolaille">
+            <div class="grilleVolaille">
+              <template x-for="coq in coqs" :key="coq.id">
+                <div class="volaille">
+                  <img src="images/icone coq.png" alt="coq">
+                  <div class="statsVolaille" x-data="
+                  {
+                    nourri: '',
+                    abreuve: '',
+                    soigne: '',
+                    nettoye: '',
+                    init(){
+                      this.updateStats();
+                      setInterval(() => this.updateStats(), 1000); // met à jour toutes les minutes
+                    }, 
+                    updateStats(){
+                      const now = new Date();
+                      const nourrirP = new Date(coq.nourris);
+                      const abreuverP = new Date(coq.abreuve);
+    
+                      if(now.getDay() == nourrirP.getDay()){this.nourri = 'nourri';}else{this.nourri = 'affamé';}
+                      if(now.getDay() == abreuverP.getDay()){this.abreuve = 'abreuvé';}else{this.abreuve = 'assoiffé';}
+                      if(coq.malade == null){this.soigne = 'sain';}else{this.soigne = 'malade';}
+                      if(coq.sale == null){this.nettoye = 'propre';}else{this.nettoye = 'sale';}
+                    }
+                  }">
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Age : ' + coq.age + 'j'"></strong>
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Poids : ' + coq.poids.toFixed(2) + ' kg'"></strong>
+                    <button @click="nourrir1Coq(coq.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px; white-space: pre;"  >   Nourrir   </strong>
+                        <strong style="font-size: 15px;"  >5 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="abreuver1Coq(coq.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Abreuver</strong>
+                        <strong style="font-size: 15px;"  >2 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nourri"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="abreuve"></strong>
+                    <button @click="soigner1Coq(coq.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Soigner</strong>
+                        <strong style="font-size: 15px;"  >6 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="nettoyer1Coq(coq.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Nettoyer</strong>
+                        <strong style="font-size: 15px;"  >3 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="soigne"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nettoye"></strong>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+    
+          <!--affichage des poussins-->
+          <h2 style="color: #2C2624; font-size: 40px;">POUSSINS</h2>
+          <div class="actionAll">
+            <button @click="nourrirPoussins" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Nourrir tous</strong>
+            </button>
+            <button @click="abreuverPoussins" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Abreuver tous</strong>
+            </button>
+            <button @click="soignerPoussins" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Soigner tous</strong>
+            </button>
+            <button @click="nettoyerPoussins" class="action-buttLogge2">
+              <strong style="font-size: 22px;"  >Nettoyer tous</strong>
+            </button>
+          </div>
+          <div class="containerVolaille">
+            <div class="grilleVolaille">
+              <template x-for="poussin in poussins" :key="poussin.id">
+                <div class="volaille">
+                  <img src="images/icone poussin.png" alt="poussin">
+                  <div class="statsVolaille" x-data="
+                  {
+                    nourri: '',
+                    abreuve: '',
+                    soigne: '',
+                    nettoye: '',
+                    init(){
+                      this.updateStats();
+                      setInterval(() => this.updateStats(), 1000); // met à jour toutes les minutes
+                    }, 
+                    updateStats(){
+                      const now = new Date();
+                      const nourrirP = new Date(poussin.nourris);
+                      const abreuverP = new Date(poussin.abreuve);
+    
+                      if(now.getDay() == nourrirP.getDay()){this.nourri = 'nourri';}else{this.nourri = 'affamé';}
+                      if(now.getDay() == abreuverP.getDay()){this.abreuve = 'abreuvé';}else{this.abreuve = 'assoiffé';}
+                      if(poussin.malade == null){this.soigne = 'sain';}else{this.soigne = 'malade';}
+                      if(poussin.sale == null){this.nettoye = 'propre';}else{this.nettoye = 'sale';}
+                    }
+                  }">
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Age : ' + poussin.age + 'j'"></strong>
+                    <strong style="color: #2C2624; font-size: 22px;" x-text="'Poids : ' + poussin.poids.toFixed(2) + ' kg'"></strong>
+                    <button @click="nourir1Poussin(poussin.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px; white-space: pre;"  >   Nourrir   </strong>
+                        <strong style="font-size: 15px;"  >5 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="abreuver1Poussin(poussin.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Abreuver</strong>
+                        <strong style="font-size: 15px;"  >2 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nourri"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="abreuve"></strong>
+                    <button @click="soigner1Poussin(poussin.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Soigner</strong>
+                        <strong style="font-size: 15px;"  >6 écus</strong>
+                      </div>
+                    </button>
+                    <button @click="nettoyer1Poussin(poussin.id)" class="action-buttLogge2">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <strong style="font-size: 15px;"  >Nettoyer</strong>
+                        <strong style="font-size: 15px;"  >3 écus</strong>
+                      </div>
+                    </button>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="soigne"></strong>
+                    <strong style="font-size: 22px; color: #A6550D" x-text="nettoye"></strong>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+    
+          <!--affichage de la nurserie-->
+          <h2 style="color: #2C2624;" class="text-xl font-bold mb-4">NURSERIE</h2>
+          <div class="nurserie">
+            <span style="color: #2C2624; font-size: 24px; font-weight: bold" x-text="'Oeufs en couvaison : ' + pouleCouv"></span>
+            <div class="statsVolaille" x-data="{QTT: 0}">
+              <span style="color: #2C2624; font-size: 24px; font-weight: bold" x-text="'Poules disponibles : ' + (poules.length-pouleCouv)"></span>
+              <span style="color: #2C2624; font-size: 24px; font-weight: bold;" x-text="'Oeufs disponibles : ' + fermier.remise.oeuf"></span>
+              <input style="background: #fdf7e8;" type="number" min="1" x-model="QTT" class="border p-1 rounded" placeholder="QTT">
+              <button @click="couver" class="action-buttLogge2">
+                <span style="font-size: 22px; font-weight: bold;"  >Couver</span>
+              </button>
+            </div>
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+        </div>
+        <!-- Fin Ecran poulailler -->
+
+        <!-- Debut Ecran clapiers -->
+        <div class="contenu" x-show="showClapiers && token">
+          <h1 class="titrePage">CLAPIERS</h1>
+
+          <!-- Pour les lapins -->
+          <h2 style="margin-top: 3vh; margin-bottom: 3vh; color: #2C2624; font-size: 3em;">ADULTES</h2>
+          <img src="images/clapier adultes grand.png" alt="clapiersA" class="image-cadre">
+          <h2 class="tt-lapins">
+            <span>Lapins femelles : <span x-text="fermier.clapier.nbLapinsFemelles"></span></span>
+            <span>Lapins mâles : <span x-text="fermier.clapier.nbLapinsMales"></span></span>
+          </h2>
+
+          <!-- Bouton lapins -->
+          <div class="disp-buttC">
+            <!-- Bouton nourrir -->
+            <div class="disp-one-buttC">
+              <button @click="nourrirClapierLapins" class="action-buttC">
+                <span  >Nourrir</span>
+                <span  >5 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.adultesNourris ? 'rassasiés' : 'affamés'"></p>
+            </div>
+
+            <!-- Bouton Abreuver -->
+            <div class="disp-one-buttC">
+              <button @click="abreuverClapierLapins" class="action-buttC">
+                <span   >Abreuver</span>
+                <span   >2 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.adultesAbreuves ? 'abreuvés' : 'assoiffés'"></p>
+            </div>
+
+            <!-- Bouton Soigner -->
+            <div class="disp-one-buttC">
+              <button @click="soignerClapierLapins" class="action-buttC">
+                <span   >Soigner</span>
+                <span   >6 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.adultesMalades ? 'malades' : 'sains'"></p>
+            </div>
+
+            <!-- Bouton Nettoyer -->
+            <div class="disp-one-buttC">
+              <button @click="nettoyerClapierLapins" class="action-buttC">
+                <span   >Nettoyer</span>
+                <span   >3 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.adultesSales ? 'sales' : 'propres'"></p>
+            </div>
+          </div>
+
+
+          <!--Pour les lapereaux -->
+          <h2 style="margin-top: 3vh; margin-bottom: 3vh; color: #2C2624; font-size: 3em;">LAPEREAUX</h2>
+          <img src="images/clapier bebes grand.png" alt="clapiersB" class="image-cadre">
+          <h2 class="tt-lapins">
+            <span>Petits lapereaux : <span x-text="fermier.clapier.nbLapereauxPetits + fermier.clapier.nbLapereauxBebes"></span></span>
+            <span>Gros lapereaux : <span x-text="fermier.clapier.nbLapereauxGros"></span></span>
+          </h2>      
+
+          <!-- Bouton Lapereaux -->
+          <div class="disp-buttC">
+            <!-- Bouton nourrir -->
+            <div class="disp-one-buttC">
+              <button @click="nourrirClapierLapereaux" class="action-buttC">
+                <span   >Nourrir</span>
+                <span   >5 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.enfantsNourris ? 'rassasiés' : 'affamés'"></p>
+            </div>
+
+            <!-- Bouton Abreuver -->
+            <div class="disp-one-buttC">
+              <button @click="abreuverClapierLapereaux" class="action-buttC">
+                <span   >Abreuver</span>
+                <span   >2 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.enfantsAbreuves ? 'abreuvés' : 'assoiffés'"></p>
+            </div>
+
+            <!-- Bouton Soigner -->
+            <div class="disp-one-buttC">
+              <button @click="soignerClapierLapereaux" class="action-buttC">
+                <span   >Soigner</span>
+                <span   >6 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.enfantsMalades ? 'malades' : 'sains'"></p>
+            </div>
+
+            <!-- Bouton Nettoyer -->
+            <div class="disp-one-buttC" style="padding-bottom: 25px">
+              <button @click="nettoyerClapierLapereaux" class="action-buttC">
+                <span   >Nettoyer</span>
+                <span   >3 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.clapier.enfantsSales ? 'sales' : 'propres'"></p>
+            </div>
+          </div>
+          
+        </div>
+        <!-- Fin Ecran clapiers -->
+
+        <!-- Debut Ecran vache -->
+        <div class="contenu" x-show="showVache && token" x-data="{vacheAFaim, vacheASoif}">
+          <h2 class="titrePage">PATURAGE</h2>
+          <img src="images/vache grand.png" alt="VacheA" class="image-cadre">
+          <h2 class="tt-vache">
+            <span>Age : <span x-text="fermier.vache.age + 'j'"></span></span>
+            <span>Poids : <span x-text="fermier.vache.poids + 'kg'"></span></span>
+            <br><span>Quantité de lait produite : <span x-text="fermier.vache.litresLait + 'L'"></span></span>
+          </h2>
+
+          <!-- Bouton Vache -->
+          <div class="disp-buttC">
+            <!-- Bouton nourrir herbe -->
+            <div class="disp-one-buttC">
+              <button @click="nourrirHerbe" class="action-buttC">
+                <span  >Nourrir - herbe</span>
+                <br>
+              </button>
+              <p class="descriptionC" x-text="vacheAFaim ? 'affamée' : 'rassasiée'"></p>
+            </div>
+
+            <!-- Bouton nourrir paille -->
+            <div class="disp-one-buttC">
+              <button @click="nourrirPaille" class="action-buttC">
+                <span   >Nourrir - paille</span>
+                <span   >5 écus</span>
+              </button>
+              <p class="descriptionC" x-text="vacheAFaim ? 'affamée' : 'rassasiée'"></p>
+            </div>
+
+            <!-- Bouton Abreuver -->
+            <div class="disp-one-buttC">
+              <button @click="abreuverVache" class="action-buttC">
+                <span   >Abreuver</span>
+                <span   >2 écus</span>
+              </button>
+              <p class="descriptionC" x-text="vacheASoif ? 'assoiffée' : 'abreuvée'"></p>
+            </div>
+
+            <!-- Bouton Soigner -->
+            <div class="disp-one-buttC">
+              <button @click="soignerVache" class="action-buttC">
+                <span   >Soigner</span>
+                <span   >6 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.vache.malade ? 'malade' : 'saine'"></p>
+            </div>
+
+            <!-- Bouton Nettoyer -->
+            <div class="disp-one-buttC">
+              <button @click="nettoyerVache" class="action-buttC">
+                <span   >Nettoyer</span>
+                <span   >3 écus</span>
+              </button>
+              <p class="descriptionC" x-text="fermier.vache.sale ? 'sale' : 'propre'"></p>
+            </div>
+
+            <!-- Bouton Traire -->
+            <div class="disp-one-buttC">
+              <button @click="traireVache" class="action-buttC">
+                <span   >Traire</span>
+                <br>
+              </button>
+            </div>
+
+          </div>
+        </div>
+        <!-- Fin Ecran vache -->
+
+        <!-- Debut Ecran du classement-->
+        <div class="contenu" x-show="showClassement && token">
+          <span class="titrePage">CLASSEMENT</span>
+          <select id="select" style="color: #2C2624; font-size: 22px;" class="classement-select" onchange="toggle()">
+            <option value="global">Global</option>
+            <option value="ecus">Ecus</option>
+            <option value="nego">Négo</option>
+            <option value="prod">Prod</option>
+          </select>
+          <div id="global" class="classement">
+            <div class="joueur">
+              <strong class="stats">Rang</strong>
+              <strong class="stats">Joueur</strong>
+              <strong class="stats">Niveau</strong>
+              <strong class="stats">Global</strong>
+              <strong class="stats">Ecus</strong>
+              <strong class="stats">Négo</strong>
+              <strong class="stats">Prod</strong>
+            </div>
+            <template x-for="(fermier, index) in classementProd" :key="fermier.nomUtilisateur">
+              <div  class="joueur">
+                <span class="stats" x-text="(index + 1)"></span>
+                <span class="stats" x-text="fermier.nomUtilisateur"></span>
+                <span class="stats" x-text="1"></span>
+                <span class="stats" x-text="fermier.statistique.pointGlobal"></span>
+                <span class="stats" x-text="fermier.statistique.pointEcus"></span>
+                <span class="stats" x-text="fermier.statistique.pointNego"></span>
+                <span class="stats" x-text="fermier.statistique.pointProd"></span>
+              </div> 
+            </template>
+          </div>
+          <div id="ecus" class="classement">
+            <div class="joueur">
+              <strong class="stats">Rang</strong>
+              <strong class="stats">Joueur</strong>
+              <strong class="stats">Niveau</strong>
+              <strong class="stats">Ecus</strong>
+              <strong class="stats">Négo</strong>
+              <strong class="stats">Prod</strong>
+              <strong class="stats">Global</strong>
+            </div>
+            <template x-for="(fermier, index) in classementProd" :key="fermier.nomUtilisateur">
+              <div  class="joueur">
+                <span class="stats" x-text="(index + 1)"></span>
+                <span class="stats" x-text="fermier.nomUtilisateur"></span>
+                <span class="stats" x-text="1"></span>
+                <span class="stats" x-text="fermier.statistique.pointEcus"></span>
+                <span class="stats" x-text="fermier.statistique.pointNego"></span>
+                <span class="stats" x-text="fermier.statistique.pointProd"></span>
+                <span class="stats" x-text="fermier.statistique.pointGlobal"></span>
+              </div> 
+            </template>
+          </div>
+          <div id="nego" class="classement">
+            <div class="joueur">
+              <strong class="stats">Rang</strong>
+              <strong class="stats">Joueur</strong>
+              <strong class="stats">Niveau</strong>
+              <strong class="stats">Négo</strong>
+              <strong class="stats">Prod</strong>
+              <strong class="stats">Global</strong>
+              <strong class="stats">Ecus</strong>
+            </div>
+            <template x-for="(fermier, index) in classementProd" :key="fermier.nomUtilisateur">
+              <div  class="joueur">
+                <span class="stats" x-text="(index + 1)"></span>
+                <span class="stats" x-text="fermier.nomUtilisateur"></span>
+                <span class="stats" x-text="1"></span>
+                <span class="stats" x-text="fermier.statistique.pointNego"></span>
+                <span class="stats" x-text="fermier.statistique.pointProd"></span>
+                <span class="stats" x-text="fermier.statistique.pointGlobal"></span>
+                <span class="stats" x-text="fermier.statistique.pointEcus"></span>
+              </div> 
+            </template>
+          </div>
+          <div id="prod" class="classement">
+            <div class="joueur">
+              <strong class="stats">Rang</strong>
+              <strong class="stats">Joueur</strong>
+              <strong class="stats">Niveau</strong>
+              <strong class="stats">Prod</strong>
+              <strong class="stats">Global</strong>
+              <strong class="stats">Ecus</strong>
+              <strong class="stats">Négo</strong>
+            </div>
+            <template x-for="(fermier, index) in classementProd" :key="fermier.nomUtilisateur">
+              <div  class="joueur">
+                <span class="stats" x-text="(index + 1)"></span>
+                <span class="stats" x-text="fermier.nomUtilisateur"></span>
+                <span class="stats" x-text="1"></span>
+                <span class="stats" x-text="fermier.statistique.pointProd"></span>
+                <span class="stats" x-text="fermier.statistique.pointGlobal"></span>
+                <span class="stats" x-text="fermier.statistique.pointEcus"></span>
+                <span class="stats" x-text="fermier.statistique.pointNego"></span>
+              </div> 
+            </template>
+          </div>
+          <div></div>
+          <div></div>
+        </div>
+        <!-- Fin Ecran du classement-->
+
+        <!-- Debut Ecran marche -->
+        <div class="contenu" x-show="showMarche && token">
+          <h1 class="titrePage">MARCHE</h1>
+
+
+          <!-- Pour le marche image -->
+          <img src="images/marche grand.png" alt="marche" style="border: 0.5vw solid #BC6C25; width: 45%; height: auto; display: block;">
+          <h2 style="margin-top: 1.5vh; margin-bottom: 1.5vh; color: #2C2624; font-size: 2em;">Achats journaliers restants : <span x-text="12-fermier.nbAchat"></span></h2>
+          <h2 style="margin-top: 1.5vh; margin-bottom: 1.5vh; color: #2C2624; font-size: 3em;">ACHETER</h2>
+
+          <!-- Objet à acheter -->
+          <div class="shop-container" x-data="{qttPouleMarche: 0, qttCoqMarche: 0, qttLMMarche: 0, qttLFMarche: 0, article: ''}">
+
+            <div class="disp-card">
+              <img src="images/icone poule.png" alt="poule" class="disp-image">
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;">Quantité disponible : <span x-text="nbPoulesDispoMarche"></span></div>
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;"><span x-text="marche.find((element)=>element.articles == 'Poule').moyennePonderee"></span><span x-text="(nbPoulesDispoMarche > 0) ? ' écus' : '' "></span></div>
+              <div class="buy-shop">
+
+                <input type="number" min="1" placeholder="QTT" x-model="qttPouleMarche" class="quantity-input">
+                <button style="font-weight: bold;" class="buy-buttonM" @click="article = 'Poule'; acheterMarche()">Acheter</button>
+              </div>
+            </div>
+          
+            <div class="disp-card">
+              <img src="images/icone coq.png" alt="coqs" class="disp-image">
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;">Quantité disponible : <span x-text="nbCoqsDispoMarche"></div>
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;"><span x-text="marche.find((element)=>element.articles == 'Coq').moyennePonderee"></span><span x-text="(nbCoqsDispoMarche > 0) ? ' écus' : '' "></span></div>
+              <div class="buy-shop">
+
+                <input type="number" min="1" placeholder="QTT" x-model="qttCoqMarche" class="quantity-input">
+                <button style="font-weight: bold;" class="buy-buttonM" @click="article = 'Coq'; acheterMarche()">Acheter</button>
+              </div>
+            </div>
+
+            <div class="disp-card">
+              <img src="images/icone lapin femelle.png" alt="lapinF" class="disp-image">
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;">Quantité disponible : <span x-text="nbLFDispoMarche"></div>
+              <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;"><span x-text="marche.find((element)=>element.articles == 'LapinsFemelles').moyennePonderee"></span><span x-text="(nbLFDispoMarche > 0) ? ' écus' : '' "></span></div>
+              <div class="buy-shop">
+                <input type="number" min="1" placeholder="QTT" x-model="qttLFMarche" class="quantity-input">
+                <button style="font-weight: bold;" class="buy-buttonM" @click="article = 'LapinsFemelles'; acheterMarche()">Acheter</button>
+              </div>
+            </div>
+            
+              <div class="disp-card">
+                <img src="images/icone lapin male.png" alt="lapinM" class="disp-image">
+                <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;">Quantité disponible : <span x-text="nbLMDispoMarche"></div>
+                <div style="color: #2C2624; font-size: 1.5vw; font-weight: bold;"><span x-text="marche.find((element)=>element.articles == 'LapinsMales').moyennePonderee"></span><span x-text="(nbLMDispoMarche > 0) ? ' écus' : '' "></span></div>
+                <div class="buy-shop">
+                  <input type="number" min="1" placeholder="QTT" x-model="qttLMMarche" class="quantity-input">
+                  <button style="font-weight: bold;" class="buy-buttonM" @click="article = 'LapinsMales'; acheterMarche()">Acheter</button>
+                </div>
+              </div>
+          </div>
+
+          <h2 style="margin-top: 10vh; margin-bottom: 1.5vh; color: #2C2624; font-size: 3em;">VENDRE</h2>
+
+          <!-- Pour vendre -->
+          <div x-data="animalSelector()" class="sale-container">
+            <div class="form-and-image">
+              <!-- Partie gauche -->
+              <div class="left-panel">
+                <img :src="selected.image" class="main-image" alt="Animal">
+                
+                <div class="dropdownV">
+                  <div class="dropdownV-toggle" @click="open = !open">
+                    <span x-text="selected.name"></span>
+                    <span class="arrow">&#9662;</span> <!-- triangle vers le bas -->
+                  </div>
+          
+                  <div class="dropdownV-menu" x-show="open" @click.outside="open = false">
+                    <template x-for="animal in animals" :key="animal.name">
+                      <div class="dropdownV-item" @click="selectAnimal(animal)">
+                        <span x-text="animal.name"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+          
+              <!-- Partie droite -->
+              <div class="sale-form" x-data="{qttVMarche: 0, prixMarche: 0}">
+                <div style="color: #2C2624; font-weight: bold; font-size: 1.3vw;">Quantité :</div>
+                <input type="number" x-model="qttVMarche" placeholder="QTT">
+                <div style="color: #2C2624; font-weight: bold; font-size: 1.3vw;">Prix :</div>
+                <input type="number" x-model="prixMarche" placeholder="PRIX">
+                <button style="font-weight: bold;" class="buy-buttonM" @click="vendreMarche()">
+                  Mettre en vente
+                </button>
+              </div>
+            </div>
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+  
+        </div>
+        <!-- Fin Ecran marche -->
+          
+        <!-- Debut Ecran coop -->
+        <div class="contenuHome" x-show="showCoop && token">
+          <h2 class="titrePage">COOPERATIVE</h2>
+          <img style="border : 7px solid #BC6C25;" src="images/coop grand.png" alt="image cooperative">
+          <div x-show="coopOuverte">
+
+            <div class="cadreCoop" x-data="{qttPouleCoop: 0, qttCoqCoop: 0, qttLMCoop: 0, qttLFCoop: 0, qttSavonCoop: 0, qttSeringueCoop: 0, qttSacCoop: 0, qttEauCoop: 0, qttPailleCoop: 0, article: ''}">
+      
+              <div class="cadreArticle">
+                <img src="images/icone poule.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttPoule"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">60 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttPouleCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Poule'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="cadreArticle">
+                <img src="images/icone coq.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttCoq"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">50 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttCoqCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Coq'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone lapin femelle.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttLapinFemelle"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">50 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttLFCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'LapinsFemelles'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone lapin male.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttLapinMale"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">50 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttLMCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'LapinsMales'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone savon.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttSavon"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">10 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttSavonCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Savon'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone seringue.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttSeringue"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">10 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttSeringueCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Seringue'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone seau.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttEau"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">10 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttEauCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Eau'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone sac.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttSacNourriture"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">10 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttSacCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'SacNourriture'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="cadreArticle">
+                <img src="images/icone paille.png" height="210px" width="210px">
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité disponible : <span x-text="coop.qttPaille"></span></span>
+                <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">10 écus</span>
+                <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                  <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttPailleCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                  <button class="btAcheterCoop" @click="article = 'Paille'; acheterCoop()">
+                    <span>Acheter</span>
+                  </button>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+          <div x-show="!coopOuverte">
+            <h2 class="titrePage">DESOLES, NOUS SOMMES FERMES</h2>
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+        </div>
+        <!-- Fin Ecran coop -->
+
+        <!-- Debut Ecran remise -->
+        <div class="contenu" x-show="showRemise && token" x-data="animalSelectorRemise">
+          <h1 class="titrePage">REMISE</h1>
+
+          <img src="images/remise.png" alt="remise" class="remise-logo">
+
+          <div class="cadreCoop" x-data="{qttOeufCoop: 0, qttLaitCoop: 0, qttLMVCoop: 0, qttLFVCoop: 0, article: '', utiliserSur: ''}">
+          
+            <div class="cadreArticle">
+              <img src="images/icone oeuf.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.oeuf"></span></span>
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">Prix : 8 écus</span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttOeufCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                <button class="btAcheterCoop" @click="article = 'Oeuf'; vendreCoop()">
+                  <span>Vendre</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone lait.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.litresLait"></span></span>
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">Prix : 2 écus</span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttLaitCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                <button class="btAcheterCoop" @click="article = 'Lait'; vendreCoop()">
+                  <span>Vendre</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="cadreArticle">
+              <img src="images/icone lapin femelle.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.lapinsFemelles"></span></span>
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">Prix : 50 écus</span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttLFVCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                <button class="btAcheterCoop" @click="article = 'LapinsFemelles'; vendreCoop()">
+                  <span>Vendre</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone lapin male.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.lapinsMales"></span></span>
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 24px;">Prix : 50 écus</span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center;">
+                <input style="width: 35%; height: 29px; background: #fdf7e8;" type="number" min="1" x-model="qttLMVCoop" class="border p-1 rounded" placeholder="QTT" width="10">
+                <button class="btAcheterCoop" @click="article = 'LapinsMales'; vendreCoop()">
+                  <span>Vendre</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="cadreArticle">
+              <img src="images/icone savon.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.savon"></span></span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center; align-items: center;">
+                <div class="dropdownV">
+                  <div class="dropdownV-toggle" @click="openSav = !openSav">
+                    <span x-text="selectedSav.name"></span>
+                    <span class="arrow">&#9662;</span> <!-- triangle vers le bas -->
+                  </div>
+                  <div class="dropdownV-menu" x-show="openSav" @click.outside="openSav = false">
+                    <template x-for="animal in animalsSav" :key="animal.name">
+                      <div class="dropdownV-item" @click="selectAnimalSav(animal)">
+                        <span x-text="animal.name"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <button class="btAcheterCoop" @click="utiliserSavon()">
+                  <span>Utiliser</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone seringue.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.seringue"></span></span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center; align-items: center;">
+                <div class="dropdownV">
+                  <div class="dropdownV-toggle" @click="openSer = !openSer">
+                    <span x-text="selectedSer.name"></span>
+                    <span class="arrow">&#9662;</span> <!-- triangle vers le bas -->
+                  </div>
+                  <div class="dropdownV-menu" x-show="openSer" @click.outside="openSer = false">
+                    <template x-for="animal in animalsSer" :key="animal.name">
+                      <div class="dropdownV-item" @click="selectAnimalSer(animal)">
+                        <span x-text="animal.name"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <button class="btAcheterCoop" @click="utiliserSeringue()">
+                  <span>Utiliser</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone seau.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.eau"></span></span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center; align-items: center;">
+                <div class="dropdownV">
+                  <div class="dropdownV-toggle" @click="openEau = !openEau">
+                    <span x-text="selectedEau.name"></span>
+                    <span class="arrow">&#9662;</span> <!-- triangle vers le bas -->
+                  </div>
+                  <div class="dropdownV-menu" x-show="openEau" @click.outside="openEau = false">
+                    <template x-for="animal in animalsEau" :key="animal.name">
+                      <div class="dropdownV-item" @click="selectAnimalEau(animal)">
+                        <span x-text="animal.name"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <button class="btAcheterCoop" @click="utiliserEau()">
+                  <span>Utiliser</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone sac.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.sac_nourriture"></span></span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center; align-items: center;">
+                <div class="dropdownV">
+                  <div class="dropdownV-toggle" @click="openSac = !openSac">
+                    <span x-text="selectedSac.name"></span>
+                    <span class="arrow">&#9662;</span> <!-- triangle vers le bas -->
+                  </div>
+                  <div class="dropdownV-menu" x-show="openSac" @click.outside="openSac = false">
+                    <template x-for="animal in animalsSac" :key="animal.name">
+                      <div class="dropdownV-item" @click="selectAnimalSac(animal)">
+                        <span x-text="animal.name"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <button class="btAcheterCoop" @click="utiliserSac()">
+                  <span>Utiliser</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="cadreArticle">
+              <img src="images/icone paille.png" height="210px" width="210px">
+              <span style="font-weight: bold; font-family: 'Pompiere', cursive; color: #2C2624; font-size: 36px;">Quantité : <span x-text="remise.bottes_de_paille"></span></span>
+              <div style="display: flex; flex-direction: row; gap: 20px; padding: 5px 0px 0px 0px; justify-content: center; align-items: center;">
+                <button class="btAcheterCoop" @click="utiliserPaille()">
+                  <span>Utiliser</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+          <div style="height: 50px; visibility: hidden;">objet vide</div>
+        </div>
+         <!-- Fin Ecran remise -->
+
+    </div>
+
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    function toggle(){
+        let value1 = document.getElementById("select").value;
+        let global = document.getElementById("global");
+        let ecus = document.getElementById("ecus");
+        let nego = document.getElementById("nego");
+        let prod = document.getElementById("prod");
+
+        if(value1 === "global"){
+          global.style.visibility = "visible";
+          ecus.style.visibility = "hidden";
+          nego.style.visibility = "hidden";
+          prod.style.visibility = "hidden";
+        }
+        else if(value1 === "ecus") {
+          global.style.visibility = "hidden";
+          ecus.style.visibility = "visible";
+          nego.style.visibility = "hidden";
+          prod.style.visibility = "hidden";
+        }
+        else if(value1 === "nego") {
+          global.style.visibility = "hidden";
+          ecus.style.visibility = "hidden";
+          nego.style.visibility = "visible";
+          prod.style.visibility = "hidden";
+        }
+        else if(value1 === "prod") {
+          global.style.visibility = "hidden";
+          ecus.style.visibility = "hidden";
+          nego.style.visibility = "hidden";
+          prod.style.visibility = "visible";
+        }
+        else {
+          global.style.visibility = "hidden";
+          ecus.style.visibility = "hidden";
+          nego.style.visibility = "hidden";
+          prod.style.visibility = "hidden";
+        }
+      }
+
+    function farmApp() {
+      return {
+        token: null,
+        response: null,
+        vache: {},
+        clapiers: {},
+        coop: {},
+        remise: {},
+        fermier: {},
+        marche: {},
+        poules: {},
+        pouleCouv: 0,
+        coqs: {},
+        poussins: {},
+        classementGlobal:{},
+        classementEcus:{},
+        classementNego:{},
+        classementProd:{},
+
+        // Fonction de login pour obtenir le token JWT
+        async login() {
+          try {
+            const res = await fetch('/auth/test-token/Manolg11');
+            this.token = await res.text();
+            this.sortirHibernation();
+          } catch (err) {
+            console.error('Erreur lors du login:', err);
+          }
+        },
+
+        // Fonction pour appeler l'API avec la méthode, l'URL et les données
+        async callApi(method, url, body = null) {
+          try {
+            const options = {
+              method,
+              headers: {
+                'Authorization': `Bearer ${this.token}`
+              }
+            };
+
+            if (body) {
+              options.headers['Content-Type'] = 'application/json';
+              options.body = JSON.stringify(body);
+            }
+            const res = await fetch(`${url}`, options);
+            return await res.json();
+          } catch (err) {
+            return { error: 'Erreur API', details: err.message };
+          }
+        },
+
+        async couver(){
+          const data = await this.callApi('POST', `/fermiers/poules/couver/${this.QTT}`);
+          this.response = data;
+          this.getFermier();
+        },
+
+        async getRemise() {
+          this.response = await this.callApi('GET', '/fermiers/remise');
+          if (this.response) {
+            this.remise = this.response;
+          }
+        },
+
+        async getClassement(){
+          this.response = await this.callApi('GET', '/classement/triGlobal');
+          this.classementGlobal = this.response;
+          this.response = await this.callApi('GET', '/classement/triEcus');
+          this.classementEcus = this.response;
+          this.response = await this.callApi('GET', '/classement/triProd');
+          this.classementProd = this.response;
+          this.response = await this.callApi('GET', '/classement/triNego');
+          this.classementNego = this.response;
+          this.getFermier();
+        },
+
+        // Fonction pour obtenir la vache
+        async getVache() {
+          this.response = await this.callApi('GET', '/fermiers/vache');
+          if (this.response) {
+            this.vache = this.response;  // Met à jour l'objet vache
+          }
+          this.vacheASoif = !(await this.callApi('GET', '/fermiers/vache/estAbreuvee'));
+          this.vacheAFaim = !(await this.callApi('GET', '/fermiers/vache/estNourrie'));
+        },
+
+        async getPoules(){
+          this.response = await this.callApi('GET', '/fermiers/poules');
+          this.poules = this.response;
+            for(poule in this.poules){
+              if(poule.enCouvaison){
+                this.pouleCouv++;
+              }
+          }
+        },
+
+        async getCoqs(){
+          this.response = await this.callApi('GET', '/fermiers/coqs');
+          this.coqs = this.response;
+        },
+
+        async getPoussins(){
+          this.response = await this.callApi('GET', '/fermiers/poussins');
+          this.poussins = this.response;
+        },
+
+        async nourrirPoussins(){
+        const data = await this.callApi('POST', '/fermiers/poussins/nourrirAll');
+        this.response = data;
+        this.getPoussins();
+        this.getFermier();
+        },
+  
+        async abreuverPoussins(){
+          const data = await this.callApi('POST', '/fermiers/poussins/abreuverAll');
+          this.response = data;
+          this.getPoussins();
+          this.getFermier();
+        },
+  
+        async soignerPoussins(){
+          const data = await this.callApi('POST', '/fermiers/poussins/soignerAll');
+          this.response = data;
+          this.getPoussins();
+          this.getFermier();
+        },
+  
+        async nettoyerPoussins(){
+          const data = await this.callApi('POST', '/fermiers/poussins/nettoyerAll');
+          this.response = data;
+          this.getPoussins();
+          this.getFermier();
+        },
+  
+        async nourrirCoqs(){
+          const data = await this.callApi('POST', '/fermiers/coqs/nourrirAll');
+          this.response = data;
+          this.getCoqs();
+          this.getFermier();
+        },
+  
+        async abreuverCoqs(){
+          const data = await this.callApi('POST', '/fermiers/coqs/abreuverAll');
+          this.response = data;
+          this.getCoqs();
+          this.getFermier();
+        },
+
+        async hiberner() {
+          const data = await this.callApi('POST', '/fermiers/hiberner');
+          this.response = data;
+          this.getFermier();
+        },
+
+        async sortirHibernation() {
+          const data = await this.callApi('POST', '/fermiers/sortirHibernation');
+          this.response = data;
+          this.getFermier();
+        },
+  
+        async soignerCoqs(){
+          const data = await this.callApi('POST', '/fermiers/coqs/soignerAll');
+          this.response = data;
+          this.getCoqs();
+          this.getFermier();
+        },
+  
+        async nettoyerCoqs(){
+          const data = await this.callApi('POST', '/fermiers/coqs/nettoyerAll');
+          this.response = data;
+          this.getCoqs();
+          this.getFermier();
+        },
+  
+        async nourrirPoules(){
+          const data = await this.callApi('POST', '/fermiers/poules/nourrirAll');
+          this.response = data;
+          this.getPoules();
+          this.getFermier();
+        },
+  
+        async abreuverPoules(){
+          const data = await this.callApi('POST', '/fermiers/poules/abreuveAll');
+          this.response = data;
+          this.getPoules();
+          this.getFermier();
+        },
+  
+        async soignerPoules(){
+          const data = await this.callApi('POST', '/fermiers/poules/soignerAll');
+          this.response = data;
+          this.getPoules();
+          this.getFermier();
+          
+        },
+
+        async nettoyerPoules(){
+          const data = await this.callApi('POST', '/fermiers/poules/nettoyerAll');
+          this.response = data;
+          this.getPoules();
+          this.getFermier();
+        },
+
+        async nourrir1Poule(idP){
+        const data = await this.callApi('POST', `/fermiers/poules/nourrir/${idP}`);
+        this.response = data;
+        this.getPoules();
+        },
+
+        async abreuver1Poule(idP){
+          const data = await this.callApi('POST', `/fermiers/poules/abreuve/${idP}`);
+          this.response = data;
+          this.getPoules();
+        },
+
+        async soigner1Poule(idP){
+          const data = await this.callApi('POST', `/fermiers/poules/soigner/${idP}`);
+          this.response = data;
+          this.getPoules();
+        },
+
+        async nettoyer1Poule(idP){
+          const data = await this.callApi('POST', `/fermiers/poules/nettoyer/${idP}`);
+          this.response = data;
+          this.getPoules();
+        },
+
+        async nourrir1Coq(idP){
+          const data = await this.callApi('POST', `/fermiers/coqs/nourrir/${idP}`);
+          this.response = data;
+          this.getCoqs();
+        },
+
+        async abreuver1Coq(idP){
+          const data = await this.callApi('POST', `/fermiers/coqs/abreuve/${idP}`);
+          this.response = data;
+          this.getCoqs();
+        },
+
+        async soigner1Coq(idP){
+          const data = await this.callApi('POST', `/fermiers/coqs/soigner/${idP}`);
+          this.response = data;
+          this.getCoqs();
+        },
+
+        async nettoyer1Coq(idP){
+          const data = await this.callApi('POST', `/fermiers/coqs/nettoyer/${idP}`);
+          this.response = data;
+          this.getCoqs();
+        },
+
+        async nourrir1Poussin(idP){
+          const data = await this.callApi('POST', `/fermiers/poussins/nourrir/${idP}`);
+          this.response = data;
+          this.getPoussins();
+        },
+
+        async abreuver1Poussin(idP){
+          const data = await this.callApi('POST', `/fermiers/poussins/abreuve/${idP}`);
+          this.response = data;
+          this.getPoussins();
+        },
+
+        async soigner1Poussin(idP){
+          const data = await this.callApi('POST', `/fermiers/poussins/soigner/${idP}`);
+          this.response = data;
+          this.getPoussins();
+        },
+
+        async nettoyer1Poussin(idP){
+          const data = await this.callApi('POST', `/fermiers/poussins/nettoyer/${idP}`);
+          this.response = data;
+          this.getPoussins();
+        },
+
+        async getMarche() {
+          this.response = await this.callApi('GET', '/transactions/marche');
+          if (this.response) {
+            this.marche = this.response;  // Met à jour l'objet vache
+          }
+          this.valeursMarche();
+        },
+
+        async getFermier() {
+          this.response = await this.callApi('GET', '/fermiers');
+          if (this.response) {
+            this.fermier = this.response;  // Met à jour l'objet vache
+          }
+        },
+
+        async getClapier() {
+          this.response = await this.callApi('GET', '/fermiers/clapier');
+          if (this.response) {
+            this.clapiers = this.response;
+          }
+        },
+
+        async getCoop() {
+          this.response = await this.callApi('GET', '/transactions/cooperative');
+          if (this.response) {
+            this.coop = this.response;
+            this.coopOuverte = this.coop.ouverte;
+          }
+        },
+
+        async acheterCoop() {
+          switch(this.article) {
+            case 'Poule':
+              achat = {articles: `${this.article}`, quantite: `${this.qttPouleCoop}`};
+              break;
+            case 'Coq':
+              achat = {articles: `${this.article}`, quantite: `${this.qttCoqCoop}`};
+              break;
+            case 'LapinsMales':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLMCoop}`};
+              break;
+            case 'LapinsFemelles':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLFCoop}`};
+              break;
+            case 'Savon':
+              achat = {articles: `${this.article}`, quantite: `${this.qttSavonCoop}`};
+              break;
+            case 'Seringue':
+              achat = {articles: `${this.article}`, quantite: `${this.qttSeringueCoop}`};
+              break;
+            case 'SacNourriture':
+              achat = {articles: `${this.article}`, quantite: `${this.qttSacCoop}`};
+              break;
+            case 'Paille':
+              achat = {articles: `${this.article}`, quantite: `${this.qttPailleCoop}`};
+              break;
+            case 'Eau':
+              achat = {articles: `${this.article}`, quantite: `${this.qttEauCoop}`};
+              break;
+          }
+          this.response = await this.callApi('POST', '/transactions/cooperative/acheter', achat);
+          this.getCoop();
+          this.getFermier();
+        },
+
+        async nourrirPaille() {
+          this.response = await this.callApi('POST', '/fermiers/vache/nourrirPaille');
+          this.getVache();  // Met à jour les données de la vache après l'action
+          this.getFermier();
+        },
+
+        async nourrirHerbe() {
+          this.response = await this.callApi('POST', '/fermiers/vache/nourrirHerbe');
+          this.getVache();  // Met à jour les données de la vache après l'action
+          this.getFermier();
+        },
+
+        async abreuverVache() {
+          this.response = await this.callApi('POST', '/fermiers/vache/abreuver');
+          this.getVache();
+          this.getFermier();
+        },
+
+        async soignerVache() {
+          this.response = await this.callApi('POST', '/fermiers/vache/soigner');
+          this.getVache();
+          this.getFermier();
+        },
+
+        async nettoyerVache() {
+          this.response = await this.callApi('POST', '/fermiers/vache/nettoyer');
+          this.getVache();
+          this.getFermier();
+        },
+
+        async traireVache() {
+          this.response = await this.callApi('POST', '/fermiers/vache/traire');
+          this.getVache();
+          this.getFermier();
+        },
+
+        async rembourserEmprunt() {
+          const data = await this.callApi('POST', `/fermiers/rembourserEcus/${this.qttEcus}`);
+          this.response = data;
+          this.getFermier();
+        },
+
+        //Pour les lapins (fonctions)
+        async nourrirClapierLapins(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/adultes/nourrir');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async abreuverClapierLapins(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/adultes/abreuver');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async soignerClapierLapins(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/adultes/soigner');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async nettoyerClapierLapins(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/adultes/nettoyer');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        //Pour les lapereaux (fonction)
+        async nourrirClapierLapereaux(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/enfants/nourrir');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async abreuverClapierLapereaux(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/enfants/abreuver');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async soignerClapierLapereaux(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/enfants/soigner');
+          this.getClapier();
+          this.getFermier();
+        },
+
+        async nettoyerClapierLapereaux(){
+          this.response = await this.callApi('POST', '/fermiers/clapier/enfants/nettoyer');
+          this.getClapier();
+          this.getFermier();
+        },
+
+          async acheterMarche() {
+          switch(this.article) {
+            case 'Poule':
+              achat = {articles: `${this.article}`, quantite: `${this.qttPouleMarche}`};
+              break;
+            case 'Coq':
+              achat = {articles: `${this.article}`, quantite: `${this.qttCoqMarche}`};
+              break;
+            case 'LapinsMales':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLMMarche}`};
+              break;
+            case 'LapinsFemelles':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLFMarche}`};
+              break;
+          }
+          this.response = await this.callApi('POST', '/transactions/marche/acheter', achat);
+          this.getMarche();
+          this.getFermier();
+          },
+
+          async vendreMarche() {
+          achat = {articles: `${this.selected.name}`, prixUnitaire: `${this.prixMarche}`, quantite: `${this.qttVMarche}`};
+          this.response = await this.callApi('POST', '/transactions/marche/miseEnVente', achat);
+          this.getMarche();
+          this.getFermier();
+          },
+
+          async vendreCoop() {
+            switch(this.article) {
+            case 'Oeuf':
+              achat = {articles: `${this.article}`, quantite: `${this.qttOeufCoop}`};
+              break;
+            case 'Lait':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLaitCoop}`};
+              break;
+            case 'LapinsMales':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLMVCoop}`};
+              break;
+            case 'LapinsFemelles':
+              achat = {articles: `${this.article}`, quantite: `${this.qttLFVCoop}`};
+              break;
+          }
+          this.response = await this.callApi('POST', '/transactions/cooperative/vendre', achat);
+          this.getCoop();
+          this.getRemise();
+          this.getFermier();
+          },
+          
+          async utiliserSavon() {
+            switch(this.selectedSav.name) {
+            case 'Vache':
+              this.response = await this.callApi('POST', '/fermiers/vache/nettoyerSavon');
+              break;
+            case 'Lapins':
+              this.response = await this.callApi('POST', '/fermiers/clapier/adultes/nettoyerSavon');
+              break;
+            case 'Lapereaux':
+              this.response = await this.callApi('POST', '/fermiers/clapier/enfants/nettoyerSavon');
+              break;
+            case 'Poules':
+              this.response = await this.callApi('POST', '/fermiers/poules/nettoyerAllSavon');
+              break;
+            case 'Coqs':
+              this.response = await this.callApi('POST', '/fermiers/coqs/nettoyerAllSavon');
+              break;
+            case 'Poussins':
+              this.response = await this.callApi('POST', '/fermiers/poussins/nettoyerAllSavon');
+              break;
+            }
+            this.getRemise();
+            this.getFermier();
+          },
+
+          async utiliserSeringue() {
+            switch(this.selectedSer.name) {
+            case 'Vache':
+              this.response = await this.callApi('POST', '/fermiers/vache/soignerSeringue');
+              break;
+            case 'Lapins':
+              this.response = await this.callApi('POST', '/fermiers/clapier/adultes/soignerSeringue');
+              break;
+            case 'Lapereaux':
+              this.response = await this.callApi('POST', '/fermiers/clapier/enfants/soignerSeringue');
+              break;
+            case 'Poules':
+              this.response = await this.callApi('POST', '/fermiers/poules/soignerAllSeringue');
+              break;
+            case 'Coqs':
+              this.response = await this.callApi('POST', '/fermiers/coqs/soignerAllSeringue');
+              break;
+            case 'Poussins':
+              this.response = await this.callApi('POST', '/fermiers/poussins/soignerAllSeringue');
+              break;
+            }
+            this.getRemise();
+            this.getFermier();
+          },
+
+          async utiliserEau() {
+            switch(this.selectedEau.name) {
+            case 'Vache':
+              this.response = await this.callApi('POST', '/fermiers/vache/abreuverSeauDeau');
+              break;
+            case 'Lapins':
+              this.response = await this.callApi('POST', '/fermiers/clapier/adultes/abreuverEau');
+              break;
+            case 'Lapereaux':
+              this.response = await this.callApi('POST', '/fermiers/clapier/enfants/abreuverEau');
+              break;
+            case 'Poules':
+              this.response = await this.callApi('POST', '/fermiers/poules/abreuveAllSeauDeau');
+              break;
+            case 'Coqs':
+              this.response = await this.callApi('POST', '/fermiers/coqs/abreuveAllSeauDeau');
+              break;
+            case 'Poussins':
+              this.response = await this.callApi('POST', '/fermiers/poussins/abreuveAllSeauDeau');
+              break;
+            }
+            this.getRemise();
+            this.getFermier();
+          },
+
+          async utiliserSac() {
+            switch(this.selectedSac.name) {
+              case 'Lapins':
+                this.response = await this.callApi('POST', '/fermiers/clapier/adultes/nourrirSac');
+                break;
+              case 'Lapereaux':
+                this.response = await this.callApi('POST', '/fermiers/clapier/enfants/nourrirSac');
+                break;
+              case 'Poules':
+                this.response = await this.callApi('POST', '/fermiers/poules/nourrirAllSacNourriture');
+                break;
+              case 'Coqs':
+                this.response = await this.callApi('POST', '/fermiers/coqs/nourrirAllSacNourriture');
+                break;
+              case 'Poussins':
+                this.response = await this.callApi('POST', '/fermiers/poussins/nourrirAllSacNourriture');
+                break;
+            }
+            this.getClapier();
+            this.getRemise();
+            this.getFermier();
+          },
+
+          async utiliserPaille() {
+            this.response = await this.callApi('POST', '/fermiers/vache/nourrirBottePaille');
+            this.getRemise();
+            this.getFermier();
+          },
+
+          async valeursMarche() {
+              marcheCoq = this.marche.find((element) => element.articles == 'Coq');
+              marchePoule = this.marche.find((element) => element.articles == 'Poule');
+              marcheLM = this.marche.find((element) => element.articles == 'LapinsMales');
+              marcheLF = this.marche.find((element) => element.articles == 'LapinsFemelles');
+              if(marcheCoq == undefined) {
+                this.nbCoqsDispoMarche = 0;
+              } else {
+                this.nbCoqsDispoMarche = marcheCoq.quantiteRestante;
+              }
+              if(marchePoule == undefined) {
+                this.nbPoulesDispoMarche = 0;
+              } else {
+                this.nbPoulesDispoMarche = marchePoule.quantiteRestante;
+              }
+              if(marcheLM == undefined) {
+                this.nbLMDispoMarche = 0;
+              } else {
+                this.nbLMDispoMarche = marcheLM.quantiteRestante;
+              }
+              if(marcheLF == undefined) {
+                this.nbLFDispoMarche = 0;
+              } else {
+                this.nbLFDispoMarche = marcheLF.quantiteRestante;
+              }
+          }
+
+      };
+    }
+
+    function animalSelectorRemise() {
+      return {
+        openSav: false,
+        selectedSav: {
+          name: 'Vache',
+        },
+        animalsSav: [
+          { name: 'Vache'},
+          { name: 'Poules'},
+          { name: 'Coqs'},
+          { name: 'Poussins'},
+          { name: 'Lapins'},
+          { name: 'Lapereaux'}
+        ],
+        selectAnimalSav(animal) {
+          this.selectedSav = animal;
+          this.openSav = false;
+        },
+        openSer: false,
+        selectedSer: {
+          name: 'Vache',
+        },
+        animalsSer: [
+          { name: 'Vache'},
+          { name: 'Poules'},
+          { name: 'Coqs'},
+          { name: 'Poussins'},
+          { name: 'Lapins'},
+          { name: 'Lapereaux'}
+        ],
+        selectAnimalSer(animal) {
+          this.selectedSer = animal;
+          this.openSer = false;
+        },
+        openEau: false,
+        selectedEau: {
+          name: 'Vache',
+        },
+        animalsEau: [
+          { name: 'Vache'},
+          { name: 'Poules'},
+          { name: 'Coqs'},
+          { name: 'Poussins'},
+          { name: 'Lapins'},
+          { name: 'Lapereaux'}
+        ],
+        selectAnimalEau(animal) {
+          this.selectedEau = animal;
+          this.openEau = false;
+        },
+        openSac: false,
+        selectedSac: {
+          name: 'Poules',
+        },
+        animalsSac: [
+          { name: 'Poules'},
+          { name: 'Coqs'},
+          { name: 'Poussins'},
+          { name: 'Lapins'},
+          { name: 'Lapereaux'}
+        ],
+        selectAnimalSac(animal) {
+          this.selectedSac = animal;
+          this.openSac = false;
+        }
+      }
+    }
+
+    function animalSelector() {
+        return {
+          open: false,
+          selected: {
+            name: 'LapinsMales',
+            image: 'images/icone lapin male.png'
+          },
+          animals: [
+            { name: 'LapinsMales', image: 'images/icone lapin male.png' },
+            { name: 'LapinsFemelles', image: 'images/icone lapin femelle.png' },
+            { name: 'Coq', image: 'images/icone coq.png' },
+            { name: 'Poule', image: 'images/icone poule.png' }
+          ],
+          selectAnimal(animal) {
+            this.selected = animal;
+            this.open = false;
+          }
+        }
+      }
+  </script>
+</body>
+
+</html>
